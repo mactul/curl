@@ -344,7 +344,6 @@ static void read_instructions(void)
       char *p = strchr(buf, '\n');
       if(p) {
         *p = 0;
-        rc = 0;
         if(!strncmp("A: ", buf, 3)) {
           rc = inet_pton(AF_INET, &buf[3], ipv4_pref);
         }
