@@ -179,11 +179,13 @@ static int store_incoming(const unsigned char *data, size_t size,
     logmsg("Question for '%s' type %x", name, qd);
 
     qd = get16bit(&data, &size);
-    fprintf(server, "QCLASS: %04x\n", qd);
+    logmsg("QCLASS: %04x\n", qd);
 
     *qlen = qsize - size; /* total size of the query */
     memcpy(qbuf, qptr, *qlen);
   }
+  else
+    logmsg("Bad input qname");
 #if 0
   for(i = 0; i < size; i++) {
     fprintf(server, "%02d", (unsigned int)data[i]);
