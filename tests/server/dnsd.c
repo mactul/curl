@@ -336,36 +336,40 @@ static int send_response(curl_socket_t sock,
 static void read_instructions(void)
 {
   FILE *f = fopen(INSTRUCTIONS, FOPEN_READTEXT);
-  char buf[256];
-  ipv4_set = ipv6_set = FALSE;
-  while(fgets(buf, sizeof(buf), f)) {
-    int rc;
-    char *p = strchr(buf, '\n');
-    if(p) {
-      *p = 0;
-      rc = 0;
-      if(!strncmp("A: ", buf, 3)) {
-        rc = inet_pton(AF_INET, &buf[3], ipv4_pref);
-      }
-      else if(!strncmp("AAAA: ", buf, 6)) {
-        char *p6 = &buf[6];
-        if(*p6 == '[') {
-          char *pt = strchr(p6, ']');
-          if(pt)
-            *pt = 0;
-          p6++;
-        }
-        rc = inet_pton(AF_INET6, p6, ipv6_pref);
-      }
-      else {
+  if(f) {
+    char buf[256];
+    ipv4_set = ipv6_set = FALSE;
+    while(fgets(buf, sizeof(buf), f)) {
+      int rc;
+      char *p = strchr(buf, '\n');
+      if(p) {
+        *p = 0;
         rc = 0;
-      }
-      if(rc != 1) {
-        fprintf(stderr, "Bad line in %s: '%s'\n", INSTRUCTIONS, buf);
+        if(!strncmp("A: ", buf, 3)) {
+          rc = inet_pton(AF_INET, &buf[3], ipv4_pref);
+        }
+        else if(!strncmp("AAAA: ", buf, 6)) {
+          char *p6 = &buf[6];
+          if(*p6 == '[') {
+            char *pt = strchr(p6, ']');
+            if(pt)
+              *pt = 0;
+            p6++;
+          }
+          rc = inet_pton(AF_INET6, p6, ipv6_pref);
+        }
+        else {
+          rc = 0;
+        }
+        if(rc != 1) {
+          logmsg("Bad line in %s: '%s'\n", INSTRUCTIONS, buf);
+        }
       }
     }
+    fclose(f);
   }
-  fclose(f);
+  else
+    logmsg("Error opening file '%s'", INSTRUCTIONS);
 }
 
 int main(int argc, char **argv)
