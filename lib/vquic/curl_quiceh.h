@@ -1,5 +1,5 @@
-#ifndef HEADER_CURL_VQUIC_CURL_QUICHE_H
-#define HEADER_CURL_VQUIC_CURL_QUICHE_H
+#ifndef HEADER_CURL_VQUIC_CURL_QUICEH_H
+#define HEADER_CURL_VQUIC_CURL_QUICEH_H
 /***************************************************************************
  *                                  _   _ ____  _
  *  Project                     ___| | | |  _ \| |
@@ -26,25 +26,25 @@
 
 #include "../curl_setup.h"
 
-#ifdef USE_QUICHE
+#ifdef USE_QUICEH
 
-#include <quiche.h>
+#include <quiceh.h>
 #include <openssl/ssl.h>
 
 struct Curl_cfilter;
 struct Curl_easy;
 
-void Curl_quiche_ver(char *p, size_t len);
+void Curl_quiceh_ver(char *p, size_t len);
 
-CURLcode Curl_cf_quiche_create(struct Curl_cfilter **pcf,
+CURLcode Curl_cf_quiceh_create(struct Curl_cfilter **pcf,
                                struct Curl_easy *data,
                                struct connectdata *conn,
                                const struct Curl_addrinfo *ai);
 
-bool Curl_conn_is_quiche(const struct Curl_easy *data,
+bool Curl_conn_is_quiceh(const struct Curl_easy *data,
                          const struct connectdata *conn,
                          int sockindex);
 
 #endif
 
-#endif /* HEADER_CURL_VQUIC_CURL_QUICHE_H */
+#endif /* HEADER_CURL_VQUIC_CURL_QUICEH_H */

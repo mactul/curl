@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "name": "PowerMake Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/home/mactul/Documents/c-cpp/curl/src/curl",
+            "args": ["--http3-only", "https://127.0.0.1:4433/README.md"],
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {"name": "LD_LIBRARY_PATH", "value": "/home/mactul/Documents/c-cpp/quiceh/target/debug"}
+            ],
+            //"miDebuggerPath": "/usr/bin/rust-gdb"
+        },
+        {
+            "name": "Python Debug",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "args": [],
+            "justMyCode": false
+        }
+    ]
+}

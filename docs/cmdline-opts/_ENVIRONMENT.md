@@ -84,7 +84,7 @@ have preference.
 If curl was built with HTTP/3 support, setting this environment variable to a
 local directory makes curl produce **qlogs** in that directory, using file
 names named after the destination connection id (in hex). Do note that these
-files can become rather large. Works with the ngtcp2 and quiche QUIC backends.
+files can become rather large. Works with the ngtcp2 and quiceh QUIC backends.
 
 ## `SHELL`
 Used on VMS when trying to detect if using a **DCL** or a **Unix** shell.

@@ -381,7 +381,7 @@ class TestDownload:
             pytest.skip("h3 not supported")
         if proto == 'h3' and env.curl_uses_ossl_quic():
             pytest.skip('OpenSSL QUIC fails here')
-        if proto == 'h3' and env.ci_run and env.curl_uses_lib('quiche'):
+        if proto == 'h3' and env.ci_run and env.curl_uses_lib('quiceh'):
             pytest.skip("fails in CI, but works locally for unknown reasons")
         count = 10
         max_parallel = 5
@@ -410,7 +410,7 @@ class TestDownload:
             pytest.skip("h3 not supported")
         if proto == 'h3' and env.curl_uses_ossl_quic():
             pytest.skip('OpenSSL QUIC fails here')
-        if proto == 'h3' and env.ci_run and env.curl_uses_lib('quiche'):
+        if proto == 'h3' and env.ci_run and env.curl_uses_lib('quiceh'):
             pytest.skip("fails in CI, but works locally for unknown reasons")
         count = 10
         max_parallel = 5
@@ -439,7 +439,7 @@ class TestDownload:
             pytest.skip("h3 not supported")
         if proto == 'h3' and env.curl_uses_ossl_quic():
             pytest.skip('OpenSSL QUIC fails here')
-        if proto == 'h3' and env.ci_run and env.curl_uses_lib('quiche'):
+        if proto == 'h3' and env.ci_run and env.curl_uses_lib('quiceh'):
             pytest.skip("fails in CI, but works locally for unknown reasons")
         count = 10
         max_parallel = 5

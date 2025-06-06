@@ -32,7 +32,7 @@ two years. As a non-functional backend, it only adds friction and "weight" to
 the development and maintenance.
 
 Meanwhile, we have a fully working backend in the ngtcp2 one and we have two
-fully working backends in OpenSSL-QUIC and quiche well on their way of ending
+fully working backends in OpenSSL-QUIC and quiceh well on their way of ending
 their experimental status in a future.
 
 We remove msh3 support from the curl source tree in July 2025.

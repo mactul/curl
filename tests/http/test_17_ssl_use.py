@@ -314,7 +314,7 @@ class TestSSLUse:
             supported = ['TLSv1', 'TLSv1.1', 'TLSv1.2', None]
         elif env.curl_uses_lib('gnutls'):
             supported = ['TLSv1', 'TLSv1.1', 'TLSv1.2', 'TLSv1.3']
-        elif env.curl_uses_lib('quiche'):
+        elif env.curl_uses_lib('quiceh'):
             supported = ['TLSv1', 'TLSv1.1', 'TLSv1.2', 'TLSv1.3']
         elif env.curl_uses_lib('aws-lc'):
             supported = ['TLSv1', 'TLSv1.1', 'TLSv1.2', 'TLSv1.3']

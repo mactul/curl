@@ -107,7 +107,7 @@ problems may have been fixed or changed somewhat since this was written.
 
  18. HTTP/3
  18.1 connection migration does not work
- 18.2 quiche: QUIC connection is draining
+ 18.2 quiceh: QUIC connection is draining
 
  19. RTSP
  19.1 Some methods do not support response bodies
@@ -636,7 +636,7 @@ problems may have been fixed or changed somewhat since this was written.
 
  https://github.com/curl/curl/issues/7695
 
-18.2 quiche: QUIC connection is draining
+18.2 quiceh: QUIC connection is draining
 
  The transfer ends with error "QUIC connection is draining".
 
