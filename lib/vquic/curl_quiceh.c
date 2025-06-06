@@ -833,6 +833,7 @@ static CURLcode cf_flush_egress(struct Curl_cfilter *cf,
   }
 
 out:
+  // WHY using as_nanos if you're going to convert it in milliseconds anyway ?
   timeout_ns = quiceh_conn_timeout_as_nanos(ctx->qconn);
   if(timeout_ns % 1000000)
     timeout_ns += 1000000;
@@ -1358,21 +1359,15 @@ static const struct alpn_spec ALPN_SPEC_H3 = {
     return CURLE_QUIC_CONNECT_ERROR;
 
 
-  // ctx->qconn = quiche_conn_new_with_tls((const uint8_t *)ctx->scid,
-  //                                       sizeof(ctx->scid), NULL, 0,
-  //                                       (struct sockaddr *)&ctx->q.local_addr,
-  //                                       ctx->q.local_addrlen,
-  //                                       &sockaddr->curl_sa_addr,
-  //                                       sockaddr->addrlen,
-  //                                       ctx->cfg, ctx->tls.ossl.ssl, FALSE);
-
-  ctx->qconn = quiceh_connect("127.0.0.1", (const uint8_t *)ctx->scid,
-                                        sizeof(ctx->scid),
+  ctx->qconn = quiceh_conn_new_with_tls((const uint8_t *)ctx->scid,
+                                        sizeof(ctx->scid), NULL, 0,
                                         (struct sockaddr *)&ctx->q.local_addr,
                                         ctx->q.local_addrlen,
                                         &sockaddr->curl_sa_addr,
                                         sockaddr->addrlen,
-                                        ctx->cfg);
+                                        ctx->cfg, ctx->tls.ossl.ssl, FALSE);
+
+
   if(!ctx->qconn) {
     failf(data, "cannot create quiceh connection");
     return CURLE_OUT_OF_MEMORY;
