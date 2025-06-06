@@ -29,7 +29,7 @@
 
 #include "../curl_setup.h"
 
-#if defined(USE_QUICHE) || defined(USE_OPENSSL)
+#if defined(USE_QUICEH) || defined(USE_OPENSSL)
 
 #include <limits.h>
 
@@ -645,7 +645,7 @@ static CURLcode ossl_certchain(struct Curl_easy *data, SSL *ssl)
   return result;
 }
 
-#endif /* quiche or OpenSSL */
+#endif /* quiceh or OpenSSL */
 
 #ifdef USE_OPENSSL
 

@@ -508,8 +508,8 @@ class TestUpload:
             pytest.skip("h3 not supported")
         if proto == 'h3' and env.curl_uses_lib('msh3'):
             pytest.skip("msh3 fails here")
-        if proto == 'h3' and env.curl_uses_lib('quiche'):
-            pytest.skip("quiche has CWND issues with large requests")
+        if proto == 'h3' and env.curl_uses_lib('quiceh'):
+            pytest.skip("quiceh has CWND issues with large requests")
         fdata = os.path.join(env.gen_dir, 'data-63k')
         curl = CurlClient(env=env)
         extra_args = ['--trace-config', 'http/2,http/3']

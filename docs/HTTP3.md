@@ -19,7 +19,7 @@ QUIC libraries we are using:
 
 [ngtcp2](https://github.com/ngtcp2/ngtcp2)
 
-[quiche](https://github.com/cloudflare/quiche) - **EXPERIMENTAL**
+[quiceh](https://github.com/cloudflare/quiceh) - **EXPERIMENTAL**
 
 [OpenSSL 3.2+ QUIC](https://github.com/openssl/openssl) - **EXPERIMENTAL**
 
@@ -28,7 +28,7 @@ QUIC libraries we are using:
 ## Experimental
 
 HTTP/3 support in curl is considered **EXPERIMENTAL** until further notice
-when built to use *quiche* or *msh3*. Only the *ngtcp2* backend is not
+when built to use *quiceh* or *msh3*. Only the *ngtcp2* backend is not
 experimental.
 
 Further development and tweaking of the HTTP/3 support in curl happens in the
@@ -222,22 +222,22 @@ Build curl:
      % make
      % make install
 
-# quiche version
+# quiceh version
 
-quiche support is **EXPERIMENTAL**
+quiceh support is **EXPERIMENTAL**
 
-Since the quiche build manages its dependencies, curl can be built against the latest version. You are *probably* able to build against their main branch, but in case of problems, we recommend their latest release tag.
+Since the quiceh build manages its dependencies, curl can be built against the latest version. You are *probably* able to build against their main branch, but in case of problems, we recommend their latest release tag.
 
 ## Build
 
-Build quiche and BoringSSL:
+Build quiceh and BoringSSL:
 
-     % git clone --recursive -b 0.22.0 https://github.com/cloudflare/quiche
-     % cd quiche
-     % cargo build --package quiche --release --features ffi,pkg-config-meta,qlog
-     % ln -s libquiche.so target/release/libquiche.so.0
-     % mkdir quiche/deps/boringssl/src/lib
-     % ln -vnf $(find target/release -name libcrypto.a -o -name libssl.a) quiche/deps/boringssl/src/lib/
+     % git clone --recursive -b 0.22.0 https://github.com/cloudflare/quiceh
+     % cd quiceh
+     % cargo build --package quiceh --release --features ffi,pkg-config-meta,qlog
+     % ln -s libquiceh.so target/release/libquiceh.so.0
+     % mkdir quiceh/deps/boringssl/src/lib
+     % ln -vnf $(find target/release -name libcrypto.a -o -name libssl.a) quiceh/deps/boringssl/src/lib/
 
 Build curl:
 
@@ -245,7 +245,7 @@ Build curl:
      % git clone https://github.com/curl/curl
      % cd curl
      % autoreconf -fi
-     % ./configure LDFLAGS="-Wl,-rpath,$PWD/../quiche/target/release" --with-openssl=$PWD/../quiche/quiche/deps/boringssl/src --with-quiche=$PWD/../quiche/target/release
+     % ./configure LDFLAGS="-Wl,-rpath,$PWD/../quiceh/target/release" --with-openssl=$PWD/../quiceh/quiceh/deps/boringssl/src --with-quiceh=$PWD/../quiceh/target/release
      % make
      % make install
 

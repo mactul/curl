@@ -53,8 +53,8 @@ env:
   ngtcp2-version: 1.13.0
   # renovate: datasource=github-tags depName=nghttp2/nghttp2 versioning=semver registryUrl=https://github.com
   nghttp2-version: 1.65.0
-  # renovate: datasource=github-tags depName=cloudflare/quiche versioning=semver registryUrl=https://github.com
-  quiche-version: 0.23.5
+  # renovate: datasource=github-tags depName=cloudflare/quiceh versioning=semver registryUrl=https://github.com
+  quiceh-version: 0.23.5
 
 jobs:
   build-cache:
@@ -309,21 +309,21 @@ jobs:
               --with-nghttp3=$HOME/nghttp3/build
               --with-libuv
 
-          - name: quiche
+          - name: quiceh
             configure: >-
-              LDFLAGS="-Wl,-rpath,$HOME/quiche/target/release"
-              --with-openssl=$HOME/quiche/quiche/deps/boringssl/src
+              LDFLAGS="-Wl,-rpath,$HOME/quiceh/target/release"
+              --with-openssl=$HOME/quiceh/quiceh/deps/boringssl/src
               --enable-warnings --enable-werror --enable-debug
-              --with-quiche=$HOME/quiche/target/release
+              --with-quiceh=$HOME/quiceh/target/release
               --with-test-nghttpx="$HOME/nghttp2/build/bin/nghttpx"
               --with-ca-fallback
               --with-libuv
 
-          - name: quiche
-            PKG_CONFIG_PATH: '$HOME/quiche/target/release'
+          - name: quiceh
+            PKG_CONFIG_PATH: '$HOME/quiceh/target/release'
             generate: >-
-              -DOPENSSL_ROOT_DIR=$HOME/quiche/quiche/deps/boringssl/src -DENABLE_DEBUG=ON
-              -DUSE_QUICHE=ON
+              -DOPENSSL_ROOT_DIR=$HOME/quiceh/quiceh/deps/boringssl/src -DENABLE_DEBUG=ON
+              -DUSE_QUICEH=ON
               -DTEST_NGHTTPX="$HOME/nghttp2/build/bin/nghttpx"
               -DHTTPD_NGHTTPX="$HOME/nghttp2/build/bin/nghttpx"
               -DCURL_CA_FALLBACK=ON
@@ -419,35 +419,35 @@ jobs:
           key: ${{ runner.os }}-http3-build-${{ env.cache-name }}-${{ env.nghttp2-version }}-${{ env.quictls-version }}-${{ env.ngtcp2-version }}-${{ env.nghttp3-version }}
           fail-on-cache-miss: true
 
-      - name: 'cache quiche'
-        if: matrix.build.name == 'quiche'
+      - name: 'cache quiceh'
+        if: matrix.build.name == 'quiceh'
         uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
-        id: cache-quiche
+        id: cache-quiceh
         env:
-          cache-name: cache-quiche
+          cache-name: cache-quiceh
         with:
-          path: ~/quiche
-          key: ${{ runner.os }}-http3-build-${{ env.cache-name }}-${{ env.quiche-version }}
+          path: ~/quiceh
+          key: ${{ runner.os }}-http3-build-${{ env.cache-name }}-${{ env.quiceh-version }}
 
-      - name: 'build quiche and boringssl'
-        if: matrix.build.name == 'quiche' && steps.cache-quiche.outputs.cache-hit != 'true'
+      - name: 'build quiceh and boringssl'
+        if: matrix.build.name == 'quiceh' && steps.cache-quiceh.outputs.cache-hit != 'true'
         run: |
           cd $HOME
-          git clone --quiet --depth=1 -b ${{ env.quiche-version }} --recursive https://github.com/cloudflare/quiche.git
-          cd quiche
+          git clone --quiet --depth=1 -b ${{ env.quiceh-version }} --recursive https://github.com/cloudflare/quiceh.git
+          cd quiceh
           #### Work-around https://github.com/curl/curl/issues/7927 #######
           #### See https://github.com/alexcrichton/cmake-rs/issues/131 ####
-          sed -i -e 's/cmake = "0.1"/cmake = "=0.1.45"/' quiche/Cargo.toml
+          sed -i -e 's/cmake = "0.1"/cmake = "=0.1.45"/' quiceh/Cargo.toml
 
-          cargo build -v --package quiche --release --features ffi,pkg-config-meta,qlog --verbose
-          ln -s libquiche.so target/release/libquiche.so.0
-          mkdir -v quiche/deps/boringssl/src/lib
-          ln -vnf $(find target/release -name libcrypto.a -o -name libssl.a) quiche/deps/boringssl/src/lib/
+          cargo build -v --package quiceh --release --features ffi,pkg-config-meta,qlog --verbose
+          ln -s libquiceh.so target/release/libquiceh.so.0
+          mkdir -v quiceh/deps/boringssl/src/lib
+          ln -vnf $(find target/release -name libcrypto.a -o -name libssl.a) quiceh/deps/boringssl/src/lib/
 
           # include dir
-          # $HOME/quiche/quiche/deps/boringssl/src/include
+          # $HOME/quiceh/quiceh/deps/boringssl/src/include
           # lib dir
-          # $HOME/quiche/quiche/deps/boringssl/src/lib
+          # $HOME/quiceh/quiceh/deps/boringssl/src/lib
 
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:

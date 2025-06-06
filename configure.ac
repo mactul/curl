@@ -173,7 +173,7 @@ curl_headers_msg="enabled (--disable-headers-api)"
     ssl_backends=
      curl_h1_msg="enabled (internal)"
      curl_h2_msg="no      (--with-nghttp2)"
-     curl_h3_msg="no      (--with-ngtcp2 --with-nghttp3, --with-quiche, --with-openssl-quic, --with-msh3)"
+     curl_h3_msg="no      (--with-ngtcp2 --with-nghttp3, --with-quiceh, --with-openssl-quic, --with-msh3)"
 
 enable_altsvc="yes"
 hsts="yes"
@@ -3616,89 +3616,89 @@ if test "x$USE_OPENSSL_QUIC" = "x1" -a "x$USE_NGHTTP3" = "x1"; then
 fi
 
 dnl **********************************************************************
-dnl Check for quiche (QUIC)
+dnl Check for quiceh (QUIC)
 dnl **********************************************************************
 
-OPT_QUICHE="no"
+OPT_QUICEH="no"
 
 if test "x$disable_http" = "xyes" -o "x$USE_NGTCP" = "x1"; then
-  # without HTTP or with ngtcp2, quiche is no use
-  OPT_QUICHE="no"
+  # without HTTP or with ngtcp2, quiceh is no use
+  OPT_QUICEH="no"
 fi
 
-AC_ARG_WITH(quiche,
-AS_HELP_STRING([--with-quiche=PATH],[Enable quiche usage])
-AS_HELP_STRING([--without-quiche],[Disable quiche usage]),
-  [OPT_QUICHE=$withval])
-case "$OPT_QUICHE" in
+AC_ARG_WITH(quiceh,
+AS_HELP_STRING([--with-quiceh=PATH],[Enable quiceh usage])
+AS_HELP_STRING([--without-quiceh],[Disable quiceh usage]),
+  [OPT_QUICEH=$withval])
+case "$OPT_QUICEH" in
   no)
-    dnl --without-quiche option used
-    want_quiche="no"
+    dnl --without-quiceh option used
+    want_quiceh="no"
     ;;
   yes)
-    dnl --with-quiche option used without path
-    want_quiche="default"
-    want_quiche_path=""
+    dnl --with-quiceh option used without path
+    want_quiceh="default"
+    want_quiceh_path=""
     ;;
   *)
-    dnl --with-quiche option used with path
-    want_quiche="yes"
-    want_quiche_path="$withval"
+    dnl --with-quiceh option used with path
+    want_quiceh="yes"
+    want_quiceh_path="$withval"
     ;;
 esac
 
-if test X"$want_quiche" != Xno; then
+if test X"$want_quiceh" != Xno; then
 
   if test "$QUIC_ENABLED" != "yes"; then
-    AC_MSG_ERROR([the detected TLS library does not support QUIC, making --with-quiche a no-no])
+    AC_MSG_ERROR([the detected TLS library does not support QUIC, making --with-quiceh a no-no])
   fi
 
   if test "$NGHTTP3_ENABLED" = 1; then
-    AC_MSG_ERROR([--with-quiche and --with-ngtcp2 are mutually exclusive])
+    AC_MSG_ERROR([--with-quiceh and --with-ngtcp2 are mutually exclusive])
   fi
 
-  dnl backup the pre-quiche variables
+  dnl backup the pre-quiceh variables
   CLEANLDFLAGS="$LDFLAGS"
   CLEANLDFLAGSPC="$LDFLAGSPC"
   CLEANCPPFLAGS="$CPPFLAGS"
   CLEANLIBS="$LIBS"
 
-  CURL_CHECK_PKGCONFIG(quiche, $want_quiche_path)
+  CURL_CHECK_PKGCONFIG(quiceh, $want_quiceh_path)
 
   if test "$PKGCONFIG" != "no"; then
-    LIB_QUICHE=`CURL_EXPORT_PCDIR([$want_quiche_path])
-      $PKGCONFIG --libs-only-l quiche`
-    AC_MSG_NOTICE([-l is $LIB_QUICHE])
+    LIB_QUICEH=`CURL_EXPORT_PCDIR([$want_quiceh_path])
+      $PKGCONFIG --libs-only-l quiceh`
+    AC_MSG_NOTICE([-l is $LIB_QUICEH])
 
-    CPP_QUICHE=`CURL_EXPORT_PCDIR([$want_quiche_path]) dnl
-      $PKGCONFIG --cflags-only-I quiche`
-    AC_MSG_NOTICE([-I is $CPP_QUICHE])
+    CPP_QUICEH=`CURL_EXPORT_PCDIR([$want_quiceh_path]) dnl
+      $PKGCONFIG --cflags-only-I quiceh`
+    AC_MSG_NOTICE([-I is $CPP_QUICEH])
 
-    LD_QUICHE=`CURL_EXPORT_PCDIR([$want_quiche_path])
-      $PKGCONFIG --libs-only-L quiche`
-    AC_MSG_NOTICE([-L is $LD_QUICHE])
+    LD_QUICEH=`CURL_EXPORT_PCDIR([$want_quiceh_path])
+      $PKGCONFIG --libs-only-L quiceh`
+    AC_MSG_NOTICE([-L is $LD_QUICEH])
 
-    LDFLAGS="$LDFLAGS $LD_QUICHE"
-    LDFLAGSPC="$LDFLAGSPC $LD_QUICHE"
-    CPPFLAGS="$CPPFLAGS $CPP_QUICHE"
-    LIBS="$LIB_QUICHE $LIBS"
+    LDFLAGS="$LDFLAGS $LD_QUICEH"
+    LDFLAGSPC="$LDFLAGSPC $LD_QUICEH"
+    CPPFLAGS="$CPPFLAGS $CPP_QUICEH"
+    LIBS="$LIB_QUICEH $LIBS"
 
     if test "x$cross_compiling" != "xyes"; then
-      DIR_QUICHE=`echo $LD_QUICHE | $SED -e 's/^-L//'`
+      DIR_QUICEH=`echo $LD_QUICEH | $SED -e 's/^-L//'`
     fi
-    AC_CHECK_LIB(quiche, quiche_conn_send_ack_eliciting,
+    AC_CHECK_LIB(quiceh, quiceh_conn_send_ack_eliciting,
       [
-        AC_CHECK_HEADERS(quiche.h,
+        AC_CHECK_HEADERS(quiceh.h,
           experimental="$experimental HTTP3"
           AC_MSG_NOTICE([HTTP3 support is experimental])
-          curl_h3_msg="enabled (quiche)"
-          AC_DEFINE(USE_QUICHE, 1, [if quiche is in use])
-          USE_QUICHE=1
-          AC_CHECK_FUNCS([quiche_conn_set_qlog_fd])
-          CURL_LIBRARY_PATH="$CURL_LIBRARY_PATH:$DIR_QUICHE"
+          curl_h3_msg="enabled (quiceh)"
+          AC_DEFINE(USE_QUICEH, 1, [if quiceh is in use])
+          USE_QUICEH=1
+          AC_CHECK_FUNCS([quiceh_conn_set_qlog_fd])
+          CURL_LIBRARY_PATH="$CURL_LIBRARY_PATH:$DIR_QUICEH"
           export CURL_LIBRARY_PATH
-          AC_MSG_NOTICE([Added $DIR_QUICHE to CURL_LIBRARY_PATH])
-          LIBCURL_PC_REQUIRES_PRIVATE="$LIBCURL_PC_REQUIRES_PRIVATE quiche",
+          AC_MSG_NOTICE([Added $DIR_QUICEH to CURL_LIBRARY_PATH])
+          LIBCURL_PC_REQUIRES_PRIVATE="$LIBCURL_PC_REQUIRES_PRIVATE quiceh",
           [],
           [
             AC_INCLUDES_DEFAULT
@@ -3707,14 +3707,14 @@ if test X"$want_quiche" != Xno; then
         )
       ],
         dnl not found, revert back to clean variables
-        AC_MSG_ERROR([couldn't use quiche])
+        AC_MSG_ERROR([couldn't use quiceh])
     )
   else
-    dnl no quiche pkg-config found, deal with it
-    if test X"$want_quiche" != Xdefault; then
-      dnl To avoid link errors, we do not allow --with-quiche without
+    dnl no quiceh pkg-config found, deal with it
+    if test X"$want_quiceh" != Xdefault; then
+      dnl To avoid link errors, we do not allow --with-quiceh without
       dnl a pkgconfig file
-      AC_MSG_ERROR([--with-quiche was specified but could not find quiche pkg-config file.])
+      AC_MSG_ERROR([--with-quiceh was specified but could not find quiceh pkg-config file.])
     fi
   fi
 fi
@@ -3766,8 +3766,8 @@ if test X"$want_msh3" != Xno; then
   if test "$NGHTTP3_ENABLED" = 1; then
     AC_MSG_ERROR([--with-msh3 and --with-ngtcp2 are mutually exclusive])
   fi
-  if test "$USE_QUICHE" = 1; then
-    AC_MSG_ERROR([--with-msh3 and --with-quiche are mutually exclusive])
+  if test "$USE_QUICEH" = 1; then
+    AC_MSG_ERROR([--with-msh3 and --with-quiceh are mutually exclusive])
   fi
 
   dnl backup the pre-msh3 variables
@@ -5235,7 +5235,7 @@ if test "x$USE_NGHTTP2" = "x1"; then
   SUPPORT_FEATURES="$SUPPORT_FEATURES HTTP2"
 fi
 
-if test "x$USE_NGTCP2_H3" = "x1" -o "x$USE_QUICHE" = "x1" \
+if test "x$USE_NGTCP2_H3" = "x1" -o "x$USE_QUICEH" = "x1" \
     -o "x$USE_OPENSSL_H3" = "x1" -o "x$USE_MSH3" = "x1"; then
   if test "x$CURL_WITH_MULTI_SSL" = "x1"; then
     AC_MSG_ERROR([MultiSSL cannot be enabled with HTTP/3 and vice versa])

@@ -282,7 +282,7 @@ HTTP/3:
       - changed-files:
           - any-glob-to-all-files: "{\
               .github/workflows/ngtcp2*,\
-              .github/workflows/quiche*,\
+              .github/workflows/quiceh*,\
               .github/workflows/osslq*,\
               CMake/FindMSH3.cmake,\
               CMake/FindNGHTTP3.cmake,\

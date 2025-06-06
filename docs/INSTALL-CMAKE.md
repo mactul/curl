@@ -379,7 +379,7 @@ Details via CMake
 - `USE_MSH3`:                               Use msh3/msquic library for HTTP/3 support. Default: `OFF`
 - `USE_NGHTTP2`:                            Use nghttp2 library. Default: `ON`
 - `USE_NGTCP2`:                             Use ngtcp2 and nghttp3 libraries for HTTP/3 support. Default: `OFF`
-- `USE_QUICHE`:                             Use quiche library for HTTP/3 support. Default: `OFF`
+- `USE_QUICEH`:                             Use quiceh library for HTTP/3 support. Default: `OFF`
 - `USE_WIN32_IDN`:                          Use WinIDN for IDN support. Default: `OFF`
 - `USE_WIN32_LDAP`:                         Use Windows LDAP implementation. Default: `ON`
 
@@ -443,8 +443,8 @@ Details via CMake
 - `NETTLE_INCLUDE_DIR`:                     The nettle include directory.
 - `NETTLE_LIBRARY`:                         Path to `nettle` library.
 - `PTHREAD_LIBRARY`:                        Path to `pthread` library. (for Rustls)
-- `QUICHE_INCLUDE_DIR`:                     The quiche include directory.
-- `QUICHE_LIBRARY`:                         Path to `quiche` library.
+- `QUICEH_INCLUDE_DIR`:                     The quiceh include directory.
+- `QUICEH_LIBRARY`:                         Path to `quiceh` library.
 - `RUSTLS_INCLUDE_DIR`:                     The Rustls include directory.
 - `RUSTLS_LIBRARY`:                         Path to `rustls` library.
 - `WATT_ROOT`:                              Set this variable to the root installation of Watt-32.
@@ -480,7 +480,7 @@ Available variables:
 - `HAVE_LDAP_INIT_FD`:                      `ldap_init_fd` present in LDAP library.
 - `HAVE_LDAP_URL_PARSE`:                    `ldap_url_parse` present in LDAP library.
 - `HAVE_OPENSSL_SRP`:                       `SSL_CTX_set_srp_username` present in OpenSSL (or fork).
-- `HAVE_QUICHE_CONN_SET_QLOG_FD`:           `quiche_conn_set_qlog_fd` present in quiche.
+- `HAVE_QUICEH_CONN_SET_QLOG_FD`:           `quiceh_conn_set_qlog_fd` present in quiceh.
 - `HAVE_RUSTLS_SUPPORTED_HPKE`:             `rustls_supported_hpke` present in Rustls (unused if Rustls is detected via `pkg-config`).
 - `HAVE_SSL_SET0_WBIO`:                     `SSL_set0_wbio` present in OpenSSL (or fork).
 - `HAVE_SSL_SET1_ECH_CONFIG_LIST`:          `SSL_set1_ech_config_list` present in OpenSSL (or fork).
