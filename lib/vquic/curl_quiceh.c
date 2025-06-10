@@ -422,16 +422,38 @@ static ssize_t stream_resp_read(void *reader_ctx,
     return -1;
   }
 
-  nread = quiceh_h3_recv_body(ctx->h3c, ctx->qconn, stream->id,
-                              buf, len);
-  if(nread >= 0) {
-    *err = CURLE_OK;
-    return nread;
+  if(quiceh_conn_version(ctx->qconn) == QUICEH_PROTOCOL_VERSION_V1)
+  {
+    nread = quiceh_h3_recv_body(ctx->h3c, ctx->qconn, stream->id,
+                                buf, len);
+    if(nread < 0) {
+      *err = CURLE_AGAIN;
+      return -1;
+    }
   }
-  else {
-    *err = CURLE_AGAIN;
-    return -1;
+  else
+  {
+    const uint8_t* out;
+    nread = quiceh_h3_recv_body_v3(ctx->h3c, ctx->qconn, stream->id,
+                                ctx->app_buffers, &out, NULL);
+    if(nread < 0) {
+      *err = CURLE_AGAIN;
+      return -1;
+    }
+
+    if(nread > len)
+    {
+      nread = len;
+    }
+
+    memcpy(buf, out, nread);
+
+    quiceh_h3_body_consumed(ctx->h3c, ctx->qconn, stream->id,
+                            (size_t)nread, ctx->app_buffers);
   }
+
+  *err = CURLE_OK;
+  return nread;
 }
 
 static CURLcode cf_recv_body(struct Curl_cfilter *cf,
@@ -602,7 +624,16 @@ static CURLcode cf_poll_events(struct Curl_cfilter *cf,
 
   /* Take in the events and distribute them to the transfers. */
   while(ctx->h3c) {
-    curl_int64_t stream3_id = quiceh_h3_conn_poll(ctx->h3c, ctx->qconn, &ev);
+    curl_int64_t stream3_id;
+    if(quiceh_conn_version(ctx->qconn) == QUICEH_PROTOCOL_VERSION_V1)
+    {
+      stream3_id = quiceh_h3_conn_poll(ctx->h3c, ctx->qconn, &ev);
+    }
+    else
+    {
+      stream3_id = quiceh_h3_conn_poll_v3(ctx->h3c, ctx->qconn, ctx->app_buffers, &ev);
+    }
+
     if(stream3_id == QUICEH_H3_ERR_DONE) {
       break;
     }
@@ -1314,7 +1345,7 @@ static const struct alpn_spec ALPN_SPEC_H3 = {
   if(result)
     return result;
 
-  ctx->cfg = quiceh_config_new(QUICEH_PROTOCOL_VERSION_V1);
+  ctx->cfg = quiceh_config_new(QUICEH_PROTOCOL_VERSION);
   if(!ctx->cfg) {
     failf(data, "cannot create quiceh config");
     return CURLE_FAILED_INIT;

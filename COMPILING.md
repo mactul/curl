@@ -18,7 +18,7 @@ pwd
 
 The go the the quiceh repository and run:
 ```sh
-QUICHE_BSSL_PATH=/home/mactul/Documents/c-cpp/boringssl QUICHE_BSSL_LINK_KIND=dylib cargo build --features ffi,pkg-config-meta
+QUICHE_BSSL_PATH=<BORINGSSL_REPO_PATH> QUICHE_BSSL_LINK_KIND=dylib cargo build --features ffi,pkg-config-meta
 
 pwd
 # copy this path, we will refer to it later as <QUICEH_REPO_PATH>
