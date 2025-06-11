@@ -141,6 +141,7 @@ LIB_CFILES =         \
   asyn-base.c        \
   asyn-thrdd.c       \
   bufq.c             \
+  bufq_nocpy.c       \
   bufref.c           \
   cf-h1-proxy.c      \
   cf-h2-proxy.c      \

@@ -29,6 +29,7 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include "../bufq.h"
+#include "../bufq_nocpy.h"
 #include "../uint-hash.h"
 #include "../urldata.h"
 #include "../cfilters.h"
@@ -793,7 +794,6 @@ static CURLcode cf_flush_egress(struct Curl_cfilter *cf,
   ssize_t nread;
   CURLcode result;
   curl_int64_t expiry_ns;
-  curl_int64_t timeout_ns;
   struct read_ctx readx;
   size_t pkt_count, gsolen;
 
@@ -860,12 +860,6 @@ static CURLcode cf_flush_egress(struct Curl_cfilter *cf,
   }
 
 out:
-  /* WHY using as_nanos if you're going
-  to convert it in milliseconds anyway ? */
-  /* timeout_ns = quiceh_conn_timeout_as_nanos(ctx->qconn);
-  if(timeout_ns % 1000000)
-    timeout_ns += 1000000; */
-    /* expire resolution is milliseconds */
   Curl_expire(data, quiceh_conn_timeout_as_millis(ctx->qconn), EXPIRE_QUIC);
   return result;
 }

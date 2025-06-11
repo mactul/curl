@@ -1,4 +1,4 @@
-To link OpenSSL with quiceh, you have to link both with boringssl.  
+To link with quiceh, you have to link both curl and quiceh with boringssl.  
 To do so, the ideal is to compile boringssl in a separate directory
 
 ```sh
