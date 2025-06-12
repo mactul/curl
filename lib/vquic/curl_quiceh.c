@@ -169,6 +169,7 @@ struct h3_stream_ctx {
   BufqNoCpy* recvbuf; /* h3 response */
   struct h1_req_parser h1; /* h1 request parsing */
   curl_uint64_t error3; /* HTTP/3 stream error code */
+  size_t nocpy_nb_bytes_in_process;
   BIT(opened); /* TRUE after stream has been opened */
   BIT(closed); /* TRUE on stream close */
   BIT(reset);  /* TRUE on stream reset */
@@ -456,17 +457,22 @@ static ssize_t stream_resp_read(struct cf_quiceh_ctx *ctx,
     Curl_bufq_nocpy_write(stream->recvbuf, buf, nread, BUFQ_ALLOC_MALLOC);
   }
   else {
-    nread = quiceh_h3_recv_body_v3(ctx->h3c, ctx->qconn, stream->id,
-                                ctx->app_buffers, (const uint8_t**)&buf, NULL);
     *err = CURLE_AGAIN;
+    if(stream->nocpy_nb_bytes_in_process) {
+      return -1;
+    }
+    nread = quiceh_h3_recv_body_v3(ctx->h3c, ctx->qconn, stream->id,
+                                   ctx->app_buffers, (const uint8_t**)&buf,
+                                   NULL);
     if(nread < 0) {
       return -1;
     }
 
-    printf("receveived %ld write %d\n", nread,
-      Curl_bufq_nocpy_write(stream->recvbuf, buf, nread, BUFQ_ALLOC_EXTERNAL));
+    stream->nocpy_nb_bytes_in_process = nread;
 
-      return nread;
+    Curl_bufq_nocpy_write(stream->recvbuf, buf, nread, BUFQ_ALLOC_EXTERNAL);
+
+    return nread;
   }
 
   *err = CURLE_OK;
@@ -946,9 +952,12 @@ static ssize_t cf_quiceh_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
 
     if(alloc_method == BUFQ_ALLOC_MALLOC)
       free(ptr_to_free);
-    else if(alloc_method == BUFQ_ALLOC_EXTERNAL)
+    else if(alloc_method == BUFQ_ALLOC_EXTERNAL) {
       quiceh_h3_body_consumed(ctx->h3c, ctx->qconn, stream->id,
                               nread, ctx->app_buffers);
+      assert(stream->nocpy_nb_bytes_in_process >= nread);
+      stream->nocpy_nb_bytes_in_process -= nread;
+    }
   }
 
   if(cf_process_ingress(cf, data)) {
@@ -970,9 +979,12 @@ static ssize_t cf_quiceh_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
 
     if(alloc_method == BUFQ_ALLOC_MALLOC)
       free(ptr_to_free);
-    else if(alloc_method == BUFQ_ALLOC_EXTERNAL)
+    else if(alloc_method == BUFQ_ALLOC_EXTERNAL) {
       quiceh_h3_body_consumed(ctx->h3c, ctx->qconn, stream->id,
                               nread, ctx->app_buffers);
+      assert(stream->nocpy_nb_bytes_in_process >= nread);
+      stream->nocpy_nb_bytes_in_process -= nread;
+    }
   }
 
   if(nread > 0) {
