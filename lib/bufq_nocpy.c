@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
@@ -135,6 +136,7 @@ size_t Curl_bufq_nocpy_read(BufqNoCpy *queue, unsigned char **data)
 
 size_t Curl_bufq_nocpy_read_cpy(BufqNoCpy *queue, unsigned char *buf,
                            size_t bufsize, unsigned char **ptr_to_free,
+                           size_t *ptr_to_free_size,
                            enum BUFQ_ALLOC_METHOD *alloc_method)
 {
   size_t size;
@@ -142,6 +144,7 @@ size_t Curl_bufq_nocpy_read_cpy(BufqNoCpy *queue, unsigned char *buf,
   BufqNoCpy *parent = NULL;
 
   *ptr_to_free = NULL;
+  *ptr_to_free_size = 0;
 
   while(queue->output_index == -1) {
     if(!queue->next) {
@@ -169,8 +172,10 @@ size_t Curl_bufq_nocpy_read_cpy(BufqNoCpy *queue, unsigned char *buf,
   }
 
   /* The buffer hasn't been entirely consumed, it's time to free it */
-  if(queue->chunks[queue->output_index].alloc_method != BUFQ_ALLOC_STATIC)
+  if(queue->chunks[queue->output_index].alloc_method != BUFQ_ALLOC_STATIC) {
     *ptr_to_free = queue->chunks[queue->output_index].data;
+    *ptr_to_free_size = queue->chunks[queue->output_index].size;
+  }
 
   queue->chunks[queue->output_index].data = NULL;
   queue->chunks[queue->output_index].size = 0;
@@ -194,8 +199,6 @@ size_t Curl_bufq_nocpy_read_cpy(BufqNoCpy *queue, unsigned char *buf,
 
 bool Curl_bufq_nocpy_is_empty(BufqNoCpy *queue)
 {
-  size_t size;
-
   while(queue->output_index == -1) {
     if(!queue->next) {
       /* queue is empty */

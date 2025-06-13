@@ -169,7 +169,7 @@ struct h3_stream_ctx {
   BufqNoCpy* recvbuf; /* h3 response */
   struct h1_req_parser h1; /* h1 request parsing */
   curl_uint64_t error3; /* HTTP/3 stream error code */
-  size_t nocpy_nb_bytes_in_process;
+  bool nocpy_pkt_in_process;
   BIT(opened); /* TRUE after stream has been opened */
   BIT(closed); /* TRUE on stream close */
   BIT(reset);  /* TRUE on stream reset */
@@ -343,7 +343,6 @@ static CURLcode write_resp_raw(struct Curl_cfilter *cf,
 {
   struct cf_quiceh_ctx *ctx = cf->ctx;
   struct h3_stream_ctx *stream = H3_STREAM_CTX(ctx, data);
-  ssize_t nwritten;
 
   (void)cf;
   if(!stream)
@@ -440,6 +439,7 @@ static ssize_t stream_resp_read(struct cf_quiceh_ctx *ctx,
 {
   uint8_t* buf;
   ssize_t nread;
+  size_t expected;
 
   if(quiceh_conn_version(ctx->qconn) == QUICEH_PROTOCOL_VERSION_V1) {
     buf = malloc(H3_STREAM_CHUNK_SIZE);
@@ -458,17 +458,21 @@ static ssize_t stream_resp_read(struct cf_quiceh_ctx *ctx,
   }
   else {
     *err = CURLE_AGAIN;
-    if(stream->nocpy_nb_bytes_in_process) {
+    if(stream->nocpy_pkt_in_process) {
       return -1;
     }
     nread = quiceh_h3_recv_body_v3(ctx->h3c, ctx->qconn, stream->id,
                                    ctx->app_buffers, (const uint8_t**)&buf,
-                                   NULL);
+                                   &expected);
     if(nread < 0) {
       return -1;
     }
 
-    stream->nocpy_nb_bytes_in_process = nread;
+    if(nread < expected) {
+      return -1;
+    }
+
+    stream->nocpy_pkt_in_process = true;
 
     Curl_bufq_nocpy_write(stream->recvbuf, buf, nread, BUFQ_ALLOC_EXTERNAL);
 
@@ -923,6 +927,38 @@ static ssize_t recv_closed_stream(struct Curl_cfilter *cf,
   return nread;
 }
 
+static size_t try_filling_buf(struct h3_stream_ctx *stream,
+                               struct cf_quiceh_ctx *ctx, unsigned char *buf,
+                               size_t len)
+{
+  size_t nread;
+  size_t total_read = 0;
+  enum BUFQ_ALLOC_METHOD alloc_method;
+  unsigned char *ptr_to_free = NULL;
+  size_t ptr_to_free_size = 0;
+
+  do {
+    nread = Curl_bufq_nocpy_read_cpy(stream->recvbuf, buf, len,
+                                     &ptr_to_free, &ptr_to_free_size,
+                                     &alloc_method);
+    if(ptr_to_free) {
+      if(alloc_method == BUFQ_ALLOC_MALLOC) {
+        free(ptr_to_free);
+      }
+      else if(alloc_method == BUFQ_ALLOC_EXTERNAL) {
+        quiceh_h3_body_consumed(ctx->h3c, ctx->qconn, stream->id,
+                                ptr_to_free_size, ctx->app_buffers);
+        stream->nocpy_pkt_in_process = false;
+      }
+    }
+    buf += nread;
+    len -= nread;
+    total_read += nread;
+  } while(len > 0 && nread > 0);
+
+  return total_read;
+}
+
 static ssize_t cf_quiceh_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
                               char *buf, size_t len, CURLcode *err)
 {
@@ -930,8 +966,6 @@ static ssize_t cf_quiceh_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
   struct h3_stream_ctx *stream = H3_STREAM_CTX(ctx, data);
   ssize_t nread = -1;
   CURLcode result;
-  enum BUFQ_ALLOC_METHOD alloc_method;
-  unsigned char *ptr_to_free = NULL;
 
   vquic_ctx_update_time(&ctx->q);
 
@@ -941,23 +975,7 @@ static ssize_t cf_quiceh_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
   }
 
   if(!Curl_bufq_nocpy_is_empty(stream->recvbuf)) {
-    nread = Curl_bufq_nocpy_read_cpy(stream->recvbuf,
-                                     (unsigned char *)buf, len,
-                                     &ptr_to_free, &alloc_method);
-
-    CURL_TRC_CF(data, cf, "[%" FMT_PRIu64 "] read recvbuf(len=%zu) "
-                "-> %zd, %d", stream->id, len, nread, *err);
-    if(nread < 0)
-      goto out;
-
-    if(alloc_method == BUFQ_ALLOC_MALLOC)
-      free(ptr_to_free);
-    else if(alloc_method == BUFQ_ALLOC_EXTERNAL) {
-      quiceh_h3_body_consumed(ctx->h3c, ctx->qconn, stream->id,
-                              nread, ctx->app_buffers);
-      assert(stream->nocpy_nb_bytes_in_process >= nread);
-      stream->nocpy_nb_bytes_in_process -= nread;
-    }
+    nread = try_filling_buf(stream, ctx, (unsigned char *)buf, len);
   }
 
   if(cf_process_ingress(cf, data)) {
@@ -968,23 +986,8 @@ static ssize_t cf_quiceh_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
   }
 
   /* recvbuf had nothing before, maybe after progressing ingress? */
-  if(nread < 0 && !Curl_bufq_nocpy_is_empty(stream->recvbuf)) {
-    nread = Curl_bufq_nocpy_read_cpy(stream->recvbuf,
-                                     (unsigned char *)buf, len,
-                                     &ptr_to_free, &alloc_method);
-    CURL_TRC_CF(data, cf, "[%" FMT_PRIu64 "] read recvbuf(len=%zu) "
-                "-> %zd, %d", stream->id, len, nread, *err);
-    if(nread < 0)
-      goto out;
-
-    if(alloc_method == BUFQ_ALLOC_MALLOC)
-      free(ptr_to_free);
-    else if(alloc_method == BUFQ_ALLOC_EXTERNAL) {
-      quiceh_h3_body_consumed(ctx->h3c, ctx->qconn, stream->id,
-                              nread, ctx->app_buffers);
-      assert(stream->nocpy_nb_bytes_in_process >= nread);
-      stream->nocpy_nb_bytes_in_process -= nread;
-    }
+  if(nread <= 0 && !Curl_bufq_nocpy_is_empty(stream->recvbuf)) {
+    nread = try_filling_buf(stream, ctx, (unsigned char *)buf, len);
   }
 
   if(nread > 0) {

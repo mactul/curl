@@ -46,6 +46,7 @@ size_t Curl_bufq_nocpy_read(BufqNoCpy *queue, unsigned char **data);
 
 size_t Curl_bufq_nocpy_read_cpy(BufqNoCpy *queue, unsigned char *buf,
                                 size_t bufsize, unsigned char **ptr_to_free,
+                                size_t *ptr_to_free_size,
                                 enum BUFQ_ALLOC_METHOD *alloc_method);
 
 void Curl_bufq_nocpy_free(BufqNoCpy **pqueue, void (*free_func)(void *));
