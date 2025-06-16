@@ -167,9 +167,9 @@ static CURLcode cf_flush_egress(struct Curl_cfilter *cf,
 struct h3_stream_ctx {
   curl_uint64_t id; /* HTTP/3 protocol stream identifier */
   BufqNoCpy* recvbuf; /* h3 response */
+  bool bufq_empty;
   struct h1_req_parser h1; /* h1 request parsing */
   curl_uint64_t error3; /* HTTP/3 stream error code */
-  bool nocpy_pkt_in_process;
   BIT(opened); /* TRUE after stream has been opened */
   BIT(closed); /* TRUE on stream close */
   BIT(reset);  /* TRUE on stream reset */
@@ -181,7 +181,7 @@ struct h3_stream_ctx {
 
 static void h3_stream_ctx_free(struct h3_stream_ctx *stream)
 {
-  Curl_bufq_nocpy_free(&stream->recvbuf, Curl_cfree);
+  Curl_bufq_nocpy_free(&stream->recvbuf, NULL);
   Curl_h1_req_parse_free(&stream->h1);
   free(stream);
 }
@@ -458,25 +458,7 @@ static ssize_t stream_resp_read(struct cf_quiceh_ctx *ctx,
   }
   else {
     *err = CURLE_AGAIN;
-    if(stream->nocpy_pkt_in_process) {
-      return -1;
-    }
-    nread = quiceh_h3_recv_body_v3(ctx->h3c, ctx->qconn, stream->id,
-                                   ctx->app_buffers, (const uint8_t**)&buf,
-                                   &expected);
-    if(nread < 0) {
-      return -1;
-    }
-
-    if(nread < expected) {
-      return -1;
-    }
-
-    stream->nocpy_pkt_in_process = true;
-
-    Curl_bufq_nocpy_write(stream->recvbuf, buf, nread, BUFQ_ALLOC_EXTERNAL);
-
-    return nread;
+    return -1;
   }
 
   *err = CURLE_OK;
@@ -927,9 +909,9 @@ static ssize_t recv_closed_stream(struct Curl_cfilter *cf,
   return nread;
 }
 
-static size_t try_filling_buf(struct h3_stream_ctx *stream,
-                               struct cf_quiceh_ctx *ctx, unsigned char *buf,
-                               size_t len)
+static size_t try_filling_buf_with_bufq(struct h3_stream_ctx *stream,
+                                        struct cf_quiceh_ctx *ctx,
+                                        unsigned char *buf, size_t len)
 {
   size_t nread;
   size_t total_read = 0;
@@ -945,11 +927,6 @@ static size_t try_filling_buf(struct h3_stream_ctx *stream,
       if(alloc_method == BUFQ_ALLOC_MALLOC) {
         free(ptr_to_free);
       }
-      else if(alloc_method == BUFQ_ALLOC_EXTERNAL) {
-        quiceh_h3_body_consumed(ctx->h3c, ctx->qconn, stream->id,
-                                ptr_to_free_size, ctx->app_buffers);
-        stream->nocpy_pkt_in_process = false;
-      }
     }
     buf += nread;
     len -= nread;
@@ -957,6 +934,42 @@ static size_t try_filling_buf(struct h3_stream_ctx *stream,
   } while(len > 0 && nread > 0);
 
   return total_read;
+}
+
+static ssize_t try_filling_buf(struct h3_stream_ctx *stream,
+                               struct cf_quiceh_ctx *ctx, unsigned char *buf,
+                               size_t len)
+{
+  ssize_t nread;
+  const uint8_t* out;
+
+  if(!stream->bufq_empty) {
+    nread = try_filling_buf_with_bufq(stream, ctx, buf, len);
+    if(nread) {
+      return nread;
+    }
+  }
+
+
+  nread = quiceh_h3_recv_body_v3(ctx->h3c, ctx->qconn, stream->id,
+                                  ctx->app_buffers, &out, NULL);
+
+  if(nread <= 0) {
+    return nread;
+  }
+
+  if(nread > len) {
+    nread = len;
+  }
+
+  stream->bufq_empty = true;
+
+  memcpy(buf, out, nread);
+
+  quiceh_h3_body_consumed(ctx->h3c, ctx->qconn, stream->id,
+                          nread, ctx->app_buffers);
+
+  return nread;
 }
 
 static ssize_t cf_quiceh_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
@@ -974,9 +987,7 @@ static ssize_t cf_quiceh_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
     return -1;
   }
 
-  if(!Curl_bufq_nocpy_is_empty(stream->recvbuf)) {
-    nread = try_filling_buf(stream, ctx, (unsigned char *)buf, len);
-  }
+  nread = try_filling_buf(stream, ctx, (unsigned char *)buf, len);
 
   if(cf_process_ingress(cf, data)) {
     CURL_TRC_CF(data, cf, "cf_recv, error on ingress");
@@ -986,7 +997,7 @@ static ssize_t cf_quiceh_recv(struct Curl_cfilter *cf, struct Curl_easy *data,
   }
 
   /* recvbuf had nothing before, maybe after progressing ingress? */
-  if(nread <= 0 && !Curl_bufq_nocpy_is_empty(stream->recvbuf)) {
+  if(nread <= 0) {
     nread = try_filling_buf(stream, ctx, (unsigned char *)buf, len);
   }
 
@@ -1307,7 +1318,7 @@ static bool cf_quiceh_data_pending(struct Curl_cfilter *cf,
   struct cf_quiceh_ctx *ctx = cf->ctx;
   const struct h3_stream_ctx *stream = H3_STREAM_CTX(ctx, data);
   (void)cf;
-  return stream && !Curl_bufq_nocpy_is_empty(stream->recvbuf);
+  return stream; /* && !Curl_bufq_nocpy_is_empty(stream->recvbuf); */
 }
 
 static CURLcode h3_data_pause(struct Curl_cfilter *cf,
