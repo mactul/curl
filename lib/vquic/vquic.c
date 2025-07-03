@@ -390,7 +390,7 @@ static CURLcode recvmmsg_packets(struct Curl_cfilter *cf,
   total_nread = 0;
   while(pkts < max_pkts) {
     n = (int)CURLMIN(CURLMIN(MMSG_NUM, IOV_MAX), max_pkts);
-    memset(&mmsg, 0, sizeof(mmsg));
+    /* memset(&mmsg, 0, sizeof(mmsg)); */
     for(i = 0; i < n; ++i) {
       msg_iov[i].iov_base = bufs[i];
       msg_iov[i].iov_len = (int)sizeof(bufs[i]);
@@ -400,6 +400,7 @@ static CURLcode recvmmsg_packets(struct Curl_cfilter *cf,
       mmsg[i].msg_hdr.msg_namelen = sizeof(remote_addr[i]);
       mmsg[i].msg_hdr.msg_control = &msg_ctrl[i * CMSG_SPACE(sizeof(int))];
       mmsg[i].msg_hdr.msg_controllen = CMSG_SPACE(sizeof(int));
+      mmsg[i].msg_hdr.msg_flags = 0;
     }
 
     while((mcount = recvmmsg(qctx->sockfd, mmsg, n, 0, NULL)) == -1 &&
