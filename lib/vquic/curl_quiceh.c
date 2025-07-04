@@ -1388,6 +1388,7 @@ static CURLcode cf_quiceh_ctx_open(struct Curl_cfilter *cf,
   int rv;
   CURLcode result;
   const struct Curl_sockaddr_ex *sockaddr;
+  const char *protocol_env;
 static const struct alpn_spec ALPN_SPEC_H3 = {
   { "h3" }, 1
 };
@@ -1399,7 +1400,14 @@ static const struct alpn_spec ALPN_SPEC_H3 = {
   if(result)
     return result;
 
-  ctx->cfg = quiceh_config_new(QUICEH_PROTOCOL_VERSION);
+  protocol_env = getenv("QUICEH_PROTOCOL");
+
+  if(protocol_env && strcmp(protocol_env, "1")) {
+    ctx->cfg = quiceh_config_new(QUICEH_PROTOCOL_VERSION_V1);
+  }
+  else {
+    ctx->cfg = quiceh_config_new(QUICEH_PROTOCOL_VERSION);
+  }
   if(!ctx->cfg) {
     failf(data, "cannot create quiceh config");
     return CURLE_FAILED_INIT;
